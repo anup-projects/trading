@@ -151,18 +151,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     // 1. Commit profile parameters to hard disk config file first
                     await window.__TAURI__.core.invoke('save_trading_profile', payload);
-                    // 2. Execute strict verification handshake over the network bridge
-                    await window.__TAURI__.core.invoke('switch_active_profile', { profileId: payload.client_id });
-                    // SYSTEM SECURITY CONTRACT: View transition triggers ONLY inside strict success path!
-                    if (statusLabel) statusLabel.innerText = "API Status: Live Token Connected";
-                    if (rootOverlay) rootOverlay.style.setProperty('display', 'none', 'important');
-                    if (workspaceGrid) workspaceGrid.style.setProperty('display', 'grid', 'important');
-                    initializeChartEngine();
+                    
+                    // 2. Commit profile secret to secure vault
+                    await window.__TAURI__.core.invoke('save_secure_token', { clientId: payload.client_id, secret: JSON.stringify(payload) });
+
+                    // 3. Set active profile
+                    await window.__TAURI__.core.invoke('save_secure_token', { clientId: "active_client_id", secret: payload.client_id });
+                    
+                    // 4. Run verbose initialization handshake over the network bridge
+                    const result = await window.__TAURI__.core.invoke('initialize_system_login', { brokerType: payload.broker_type });
+                    
+                    if (result.status === "SESSION_SUCCESS") {
+                        if (statusLabel) statusLabel.innerText = "API Status: Live Token Connected";
+                        if (rootOverlay) rootOverlay.style.setProperty('display', 'none', 'important');
+                        if (workspaceGrid) workspaceGrid.style.setProperty('display', 'grid', 'important');
+                        initializeChartEngine();
+                    } else {
+                        if (statusLabel) statusLabel.innerText = `API Status: Auth Failed (${result.error_message})`;
+                        alert(`Access Denied:\n${result.error_message}`);
+                    }
                 } catch (err) {
                     console.error("Authentication Gate Rejection:", err);
                     if (statusLabel) statusLabel.innerText = `API Status: Auth Failed (${err})`;
                     alert(`Access Denied:\n${err}`);
-                    // Overlay remains un-hidden; user stays completely locked inside wizard screen container
                 }
             }
         });

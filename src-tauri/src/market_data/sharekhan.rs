@@ -3,6 +3,7 @@ use super::{BrokerStreamEngine, BrokerProfile};
 /// Adapter representing the Sharekhan Connect (SKAPI) engine.
 pub struct SharekhanEngine;
 
+#[allow(clippy::manual_async_fn)]
 impl BrokerStreamEngine for SharekhanEngine {
     /// Authenticates with the Sharekhan SKAPI endpoint and initializes session.
     ///

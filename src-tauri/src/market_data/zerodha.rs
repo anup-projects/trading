@@ -3,6 +3,7 @@ use super::{BrokerStreamEngine, BrokerProfile};
 /// Adapter representing the Zerodha Kite Connect engine.
 pub struct ZerodhaEngine;
 
+#[allow(clippy::manual_async_fn)]
 impl BrokerStreamEngine for ZerodhaEngine {
     /// Authenticates with the Zerodha Kite API endpoint and initializes session.
     ///

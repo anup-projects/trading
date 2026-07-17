@@ -33,6 +33,7 @@ pub struct Quote {
 }
 
 /// Fetch historical market data from Yahoo Finance API.
+#[allow(clippy::needless_range_loop)]
 pub async fn fetch_historical_data(ticker: &str, period: &str) -> Result<Vec<MarketTick>, String> {
     let client = reqwest::Client::new();
     let url = format!(

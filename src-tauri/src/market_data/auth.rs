@@ -184,7 +184,7 @@ async fn perform_login_routine() -> Result<String, Box<dyn std::error::Error + S
 
     // 2. Load the corresponding credentials from the secure platform vault
     let secret_json = load_secure_config(&client_id)
-        .map_err(|e| Box::<dyn std::error::Error + Send + Sync>::from(e))?;
+        .map_err(Box::<dyn std::error::Error + Send + Sync>::from)?;
     
     let creds: crate::TradingProfile = serde_json::from_str(&secret_json)
         .map_err(|e| format!("Failed to parse profile JSON: {:?}", e))?;

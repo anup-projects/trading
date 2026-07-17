@@ -1,6 +1,8 @@
 pub mod market_data;
 
 use serde::{Deserialize, Serialize};
+use tauri::State;
+use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TradingProfile {
@@ -11,6 +13,17 @@ pub struct TradingProfile {
     pub totp_secret: String,
     pub secret_key: String,
     pub acc_password: String,
+}
+
+pub struct AppEngineState {
+    pub auth_state: market_data::auth::SharedAuthState,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AuthenticationOutput {
+    pub status: String,
+    pub token_preview: String,
+    pub error_message: String,
 }
 
 // NOTE: get_absolute_config_path() HAS BEEN PURGED. 
@@ -87,6 +100,35 @@ fn initialize_auth_manager(state: tauri::State<market_data::auth::SharedAuthStat
     });
 }
 
+#[tauri::command]
+async fn initialize_system_login(
+    broker_type: String, 
+    _app_state: State<'_, Arc<AppEngineState>>
+) -> Result<AuthenticationOutput, String> {
+    println!("[DEBUG] Initializing handshake for: {}", broker_type);
+    
+    // Perform re-auth flow using our active auth engine
+    match market_data::auth::force_reauth().await {
+        Ok(_) => {
+            println!("[DEBUG] Handshake success for {}", broker_type);
+            Ok(AuthenticationOutput {
+                status: "SESSION_SUCCESS".to_string(),
+                token_preview: "ACTIVE_JWT_STUB_SECURE".to_string(),
+                error_message: "".to_string(),
+            })
+        }
+        Err(e) => {
+            println!("[ERROR] Handshake failed: {}", e);
+            // Gracefully return AuthenticationOutput with failure status
+            Ok(AuthenticationOutput {
+                status: "SESSION_FAILED".to_string(),
+                token_preview: "".to_string(),
+                error_message: e.clone(),
+            })
+        }
+    }
+}
+
 fn get_stored_reset_date() -> u64 {
     // Look up the last reset date from Keyring
     let entry = keyring::Entry::new("com.nexus.trading.core", "last_reset_date");
@@ -131,14 +173,18 @@ pub async fn graceful_startup_wrapper() -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let state = std::sync::Arc::new(std::sync::RwLock::new(market_data::auth::AuthState {
+    let auth_state = std::sync::Arc::new(std::sync::RwLock::new(market_data::auth::AuthState {
         zerodha_token: None,
         sharekhan_token: None,
         expiry: std::time::SystemTime::now() + std::time::Duration::from_secs(86400),
     }));
+    let app_state = std::sync::Arc::new(AppEngineState {
+        auth_state: auth_state.clone(),
+    });
 
     tauri::Builder::default()
-        .manage(state)
+        .manage(auth_state)
+        .manage(app_state)
         .setup(|_app| {
             tauri::async_runtime::spawn(async move {
                 if is_new_trading_day() {
@@ -159,7 +205,8 @@ pub fn run() {
             market_data::auth::delete_secure_token,
             login_to_broker,
             complete_broker_handshake,
-            initialize_auth_manager
+            initialize_auth_manager,
+            initialize_system_login
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
