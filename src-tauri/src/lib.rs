@@ -43,6 +43,23 @@ fn switch_active_profile(profile_id: String) -> Result<String, String> {
     Ok("Active layout pointer verified".to_string())
 }
 
+#[tauri::command]
+async fn login_to_broker(client_id: String, _mpin: String) -> Result<String, String> {
+    let secret = market_data::auth::get_secure_token(client_id.clone())
+        .map_err(|e| e.to_string())?;
+    
+    // Deserialize secret JSON into local struct and execute handshake
+    let profile: TradingProfile = serde_json::from_str(&secret)
+        .map_err(|_| "Failed to decode vault profile".to_string())?;
+        
+    market_data::angel_one::execute_angel_one_handshake(
+        &profile.client_id,
+        &profile.mpin,
+        &profile.totp_secret,
+        &profile.api_key
+    ).await.map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -53,7 +70,8 @@ pub fn run() {
             market_data::auth::identify_broker,
             market_data::auth::save_secure_token,
             market_data::auth::get_secure_token,
-            market_data::auth::delete_secure_token
+            market_data::auth::delete_secure_token,
+            login_to_broker
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

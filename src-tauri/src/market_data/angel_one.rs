@@ -180,3 +180,48 @@ pub async fn start_ingestion_loop(app_handle: tauri::AppHandle) {
     });
 }
 
+use totp_rs::{Algorithm, TOTP};
+use reqwest::Client;
+
+/// Orchestrates the programmatic login handshake for Angel One.
+pub async fn execute_angel_one_handshake(
+    client_id: &str, 
+    mpin: &str, 
+    totp_secret: &str, 
+    api_key: &str
+) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+    let client = Client::builder().timeout(std::time::Duration::from_secs(10)).build()?;
+
+    // 1. Generate TOTP code dynamically
+    let totp = TOTP::new(
+        Algorithm::SHA1,
+        6,
+        1,
+        30,
+        totp_secret.as_bytes().to_vec(),
+    )?;
+    let token = totp.generate_current()?;
+
+    // 2. Multi-step Network Pipeline
+    // Step A: Initial Login Verification
+    let login_body = serde_json::json!({
+        "clientcode": client_id,
+        "mpin": mpin,
+        "totp": token
+    });
+
+    let resp = client.post("https://smartapi.in/publisher-api/auth/verifylogin")
+        .header("X-API-KEY", api_key)
+        .json(&login_body)
+        .send()
+        .await?
+        .json::<crate::market_data::auth::AngelOneOtpResponse>()
+        .await?;
+
+    if !resp.status {
+        return Err(format!("Handshake rejected: {}", resp.message).into());
+    }
+
+    Ok(resp.data.ok_or("Auth succeeded but token missing")?.jwt_token)
+}
+
