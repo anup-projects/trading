@@ -87,6 +87,48 @@ fn initialize_auth_manager(state: tauri::State<market_data::auth::SharedAuthStat
     });
 }
 
+fn get_stored_reset_date() -> u64 {
+    // Look up the last reset date from Keyring
+    let entry = keyring::Entry::new("com.nexus.trading.core", "last_reset_date");
+    if let Ok(entry) = entry {
+        if let Ok(secret) = entry.get_secret() {
+            if let Ok(s) = String::from_utf8(secret) {
+                if let Ok(val) = s.parse::<u64>() {
+                    return val;
+                }
+            }
+        }
+    }
+    0
+}
+
+fn save_reset_date(date: u64) {
+    let entry = keyring::Entry::new("com.nexus.trading.core", "last_reset_date");
+    if let Ok(entry) = entry {
+        let _ = entry.set_secret(date.to_string().as_bytes());
+    }
+}
+
+fn is_new_trading_day() -> bool {
+    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs();
+    let last_reset = get_stored_reset_date();
+    now / 86400 != last_reset / 86400
+}
+
+async fn perform_all_broker_handshakes() -> Result<(), String> {
+    market_data::auth::force_reauth().await
+}
+
+pub async fn graceful_startup_wrapper() -> Result<(), String> {
+    match perform_all_broker_handshakes().await {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            eprintln!("Startup handshake failed: {}", e);
+            Ok(())
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let state = std::sync::Arc::new(std::sync::RwLock::new(market_data::auth::AuthState {
@@ -97,6 +139,16 @@ pub fn run() {
 
     tauri::Builder::default()
         .manage(state)
+        .setup(|_app| {
+            tauri::async_runtime::spawn(async move {
+                if is_new_trading_day() {
+                    let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs();
+                    save_reset_date(now);
+                    let _ = graceful_startup_wrapper().await;
+                }
+            });
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             get_all_saved_profiles,
             save_trading_profile,

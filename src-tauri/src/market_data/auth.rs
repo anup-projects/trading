@@ -297,3 +297,17 @@ pub async fn start_token_manager(state: SharedAuthState) {
         }
     });
 }
+
+/// Triggers a forced re-authentication sequence by invalidating current session token.
+pub async fn force_reauth() -> Result<(), String> {
+    let entry = Entry::new("com.nexus.trading.core", "active_client_id")
+        .map_err(|e| format!("Failed to read active profile: {:?}", e))?;
+    
+    if let Ok(secret) = entry.get_secret() {
+        if let Ok(client_id) = String::from_utf8(secret) {
+            println!("Proactive re-authentication triggered for client ID: {}", client_id);
+            let _ = perform_login_routine().await.map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
