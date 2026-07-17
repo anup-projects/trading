@@ -43,3 +43,34 @@ impl BrokerStreamEngine for ZerodhaEngine {
         }
     }
 }
+
+use reqwest::Client;
+use std::collections::HashMap;
+use sha2::{Digest, Sha256};
+
+fn calculate_checksum(api_key: &str, request_token: &str, api_secret: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(format!("{}{}{}", api_key, request_token, api_secret).as_bytes());
+    let result = hasher.finalize();
+    format!("{:x}", result)
+}
+
+pub async fn exchange_code_for_token(api_key: &str, api_secret: &str, request_token: &str) -> Result<String, String> {
+    let client = Client::new();
+    let mut params = HashMap::new();
+    params.insert("api_key", api_key);
+    params.insert("request_token", request_token);
+    let checksum = calculate_checksum(api_key, request_token, api_secret);
+    params.insert("checksum", &checksum);
+
+    let res = client.post("https://api.kite.trade/session/token")
+        .form(&params)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?
+        .json::<serde_json::Value>()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(res["data"]["access_token"].as_str().ok_or("Token missing in response")?.to_string())
+}

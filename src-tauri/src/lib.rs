@@ -60,6 +60,25 @@ async fn login_to_broker(client_id: String, _mpin: String) -> Result<String, Str
     ).await.map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+async fn complete_broker_handshake(broker: String, request_token: String) -> Result<(), String> {
+    // Load the profile credentials from Keyring first
+    let secret = market_data::auth::get_secure_token(broker.clone())
+        .map_err(|e| format!("Profile not found: {}", e))?;
+    let profile: TradingProfile = serde_json::from_str(&secret)
+        .map_err(|_| "Failed to decode vault profile".to_string())?;
+
+    // 1. Determine broker type, perform exchange
+    let jwt = match broker.to_lowercase().as_str() {
+        "zerodha" => market_data::zerodha::exchange_code_for_token(&profile.api_key, &profile.secret_key, &request_token).await?,
+        "sharekhan" => market_data::sharekhan::exchange_code_for_token(&profile.api_key, &profile.secret_key, &request_token).await?,
+        _ => return Err("Unsupported broker for OAuth exchange".into()),
+    };
+    
+    // 2. Commit to Hardware Vault via keyring save_secure_token
+    market_data::auth::save_secure_token(broker, jwt)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -71,7 +90,8 @@ pub fn run() {
             market_data::auth::save_secure_token,
             market_data::auth::get_secure_token,
             market_data::auth::delete_secure_token,
-            login_to_broker
+            login_to_broker,
+            complete_broker_handshake
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

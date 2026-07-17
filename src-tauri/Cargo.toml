@@ -22,3 +22,4 @@ sha1 = "0.10"
 keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
 regex = "1.10"
 totp-rs = "5.5"
+sha2 = "0.10"

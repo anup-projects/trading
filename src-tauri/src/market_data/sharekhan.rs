@@ -48,3 +48,25 @@ impl BrokerStreamEngine for SharekhanEngine {
         }
     }
 }
+
+use reqwest::Client;
+use std::collections::HashMap;
+
+pub async fn exchange_code_for_token(api_key: &str, api_secret: &str, request_token: &str) -> Result<String, String> {
+    let client = Client::new();
+    let mut params = HashMap::new();
+    params.insert("apiKey", api_key);
+    params.insert("secretKey", api_secret);
+    params.insert("requestToken", request_token);
+
+    let res = client.post("https://api.sharekhan.com/skapi/services/access/token")
+        .form(&params)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?
+        .json::<serde_json::Value>()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(res["data"]["accessToken"].as_str().ok_or("Token missing in response")?.to_string())
+}
