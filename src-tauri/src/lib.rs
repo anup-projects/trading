@@ -50,7 +50,10 @@ pub fn run() {
             get_all_saved_profiles,
             save_trading_profile,
             switch_active_profile,
-            market_data::auth::identify_broker
+            market_data::auth::identify_broker,
+            market_data::auth::save_secure_token,
+            market_data::auth::get_secure_token,
+            market_data::auth::delete_secure_token
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

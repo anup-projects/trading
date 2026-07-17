@@ -230,3 +230,39 @@ async fn perform_login_routine() -> Result<String, Box<dyn std::error::Error + S
 pub fn get_cached_jwt() -> Option<String> {
     ACTIVE_JWT.read().ok().and_then(|guard| guard.clone())
 }
+
+/// Saves a secure token to the OS Keyring.
+#[tauri::command]
+pub fn save_secure_token(client_id: String, secret: String) -> Result<(), String> {
+    let vault_service = "com.nexus.trading.core";
+    let entry = Entry::new(vault_service, &format!("profile_{}", client_id))
+        .map_err(|e| format!("Keyring Initialization Error: {:?}", e))?;
+    
+    entry.set_secret(secret.as_bytes())
+        .map_err(|e| format!("Vault Write Failure: {:?}", e))
+}
+
+/// Retrieves a secure token from the OS Keyring.
+#[tauri::command]
+pub fn get_secure_token(client_id: String) -> Result<String, String> {
+    let vault_service = "com.nexus.trading.core";
+    let entry = Entry::new(vault_service, &format!("profile_{}", client_id))
+        .map_err(|e| format!("Keyring Initialization Error: {:?}", e))?;
+        
+    let secret_bytes = entry.get_secret()
+        .map_err(|e| format!("Vault Read Failure: {:?}", e))?;
+        
+    String::from_utf8(secret_bytes)
+        .map_err(|e| format!("Vault Payload Corruption: {:?}", e))
+}
+
+/// Removes a secure token from the OS Keyring.
+#[tauri::command]
+pub fn delete_secure_token(client_id: String) -> Result<(), String> {
+    let vault_service = "com.nexus.trading.core";
+    let entry = Entry::new(vault_service, &format!("profile_{}", client_id))
+        .map_err(|e| format!("Keyring Initialization Error: {:?}", e))?;
+        
+    entry.delete_credential()
+        .map_err(|e| format!("Vault Deletion Failure: {:?}", e))
+}
