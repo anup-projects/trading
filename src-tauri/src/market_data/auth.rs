@@ -266,3 +266,34 @@ pub fn delete_secure_token(client_id: String) -> Result<(), String> {
     entry.delete_credential()
         .map_err(|e| format!("Vault Deletion Failure: {:?}", e))
 }
+
+use std::sync::Arc;
+use tokio::time::{sleep, Duration};
+
+pub struct AuthState {
+    pub zerodha_token: Option<String>,
+    pub sharekhan_token: Option<String>,
+    pub expiry: std::time::SystemTime,
+}
+
+pub type SharedAuthState = Arc<RwLock<AuthState>>;
+
+pub async fn start_token_manager(state: SharedAuthState) {
+    tokio::spawn(async move {
+        loop {
+            let mut refresh_needed = false;
+            {
+                let auth = state.read().unwrap();
+                if auth.expiry < std::time::SystemTime::now() + Duration::from_secs(300) {
+                    refresh_needed = true;
+                }
+            }
+
+            if refresh_needed {
+                // Trigger token exchange flow from Fix #5 here
+                // Logic: re-run exchange_code_for_token and write to state
+            }
+            sleep(Duration::from_secs(60)).await;
+        }
+    });
+}

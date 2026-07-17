@@ -79,9 +79,24 @@ async fn complete_broker_handshake(broker: String, request_token: String) -> Res
     market_data::auth::save_secure_token(broker, jwt)
 }
 
+#[tauri::command]
+fn initialize_auth_manager(state: tauri::State<market_data::auth::SharedAuthState>) {
+    let state_clone = std::sync::Arc::clone(&state);
+    tokio::spawn(async move {
+        market_data::auth::start_token_manager(state_clone).await;
+    });
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let state = std::sync::Arc::new(std::sync::RwLock::new(market_data::auth::AuthState {
+        zerodha_token: None,
+        sharekhan_token: None,
+        expiry: std::time::SystemTime::now() + std::time::Duration::from_secs(86400),
+    }));
+
     tauri::Builder::default()
+        .manage(state)
         .invoke_handler(tauri::generate_handler![
             get_all_saved_profiles,
             save_trading_profile,
@@ -91,7 +106,8 @@ pub fn run() {
             market_data::auth::get_secure_token,
             market_data::auth::delete_secure_token,
             login_to_broker,
-            complete_broker_handshake
+            complete_broker_handshake,
+            initialize_auth_manager
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
