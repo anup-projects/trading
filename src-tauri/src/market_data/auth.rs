@@ -5,6 +5,82 @@ use keyring::Entry;
 
 static ACTIVE_JWT: RwLock<Option<String>> = RwLock::new(None);
 
+// ============================================================================
+// 1. ZERODHA (Kite Connect V3 Specs)
+// ============================================================================
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ZerodhaSessionResponse {
+    pub status: String,
+    pub data: Option<ZerodhaSessionData>,
+    pub error_type: Option<String>,
+    pub message: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ZerodhaSessionData {
+    pub user_id: String,
+    pub user_name: String,
+    pub user_type: String,
+    pub email: String,
+    pub broker: String,
+    pub access_token: String,
+    pub public_token: String,
+    pub login_time: String,
+}
+
+// ============================================================================
+// 2. ANGEL ONE (SmartAPI Core V1 Specs)
+// ============================================================================
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AngelOnePasswordResponse {
+    pub status: bool,
+    pub message: String,
+    pub errorcode: String,
+    pub data: Option<AngelOnePasswordData>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AngelOnePasswordData {
+    pub status: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AngelOneOtpResponse {
+    pub status: bool,
+    pub message: String,
+    pub errorcode: String,
+    pub data: Option<AngelOneOtpData>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AngelOneOtpData {
+    #[serde(rename = "jwtToken")]
+    pub jwt_token: String,
+    #[serde(rename = "refreshToken")]
+    pub refresh_token: String,
+    #[serde(rename = "feedToken")]
+    pub feed_token: String,
+}
+
+// ============================================================================
+// 3. SHAREKHAN (SK API Gateway Specs)
+// ============================================================================
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SharekhanTokenResponse {
+    pub status: String,
+    pub message: Option<String>,
+    pub errorcode: Option<String>,
+    #[serde(rename = "loginId")]
+    pub login_id: Option<String>,
+    #[serde(rename = "customerId")]
+    pub customer_id: Option<String>,
+    #[serde(rename = "accessToken")]
+    pub access_token: Option<String>,
+}
+
 #[derive(Debug, Serialize)]
 struct LoginRequest {
     clientcode: String,
@@ -22,9 +98,9 @@ struct LoginResponse {
 #[derive(Debug, Deserialize)]
 struct LoginData {
     #[serde(rename = "jwtToken")]
-    jwt_token: String,
+    pub jwt_token: String,
     #[serde(rename = "refreshToken")]
-    _refresh_token: String,
+    pub _refresh_token: String,
 }
 
 /// Retrieves the specified broker authorization packet straight from the OS credential manager.
