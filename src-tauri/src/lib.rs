@@ -1,3 +1,5 @@
+pub mod market_data;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -47,7 +49,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_all_saved_profiles,
             save_trading_profile,
-            switch_active_profile
+            switch_active_profile,
+            market_data::auth::identify_broker
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

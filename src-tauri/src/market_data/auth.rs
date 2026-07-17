@@ -2,8 +2,42 @@ use std::sync::RwLock;
 use std::time::SystemTime;
 use serde::{Deserialize, Serialize};
 use keyring::Entry;
+use regex::Regex;
 
 static ACTIVE_JWT: RwLock<Option<String>> = RwLock::new(None);
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum BrokerType {
+    Zerodha,
+    AngelOne,
+    Sharekhan,
+    Unknown,
+}
+
+/// System-level hook to identify broker based on ID structural footprint.
+#[tauri::command]
+pub fn identify_broker(login_id: String) -> BrokerType {
+    let id = login_id.trim().to_uppercase();
+
+    // Zerodha: Strictly 2 letters followed by 4 digits
+    let zerodha_regex = Regex::new(r"^[A-Z]{2}\d{4}$").unwrap();
+    
+    // Angel One: 6 to 8 alphanumeric characters
+    let angel_one_regex = Regex::new(r"^[A-Z0-9]{6,8}$").unwrap();
+
+    // Sharekhan: 8-digit numeric ID
+    let sharekhan_regex = Regex::new(r"^\d{8}$").unwrap();
+
+    if zerodha_regex.is_match(&id) {
+        BrokerType::Zerodha
+    } else if sharekhan_regex.is_match(&id) {
+        BrokerType::Sharekhan
+    } else if angel_one_regex.is_match(&id) {
+        BrokerType::AngelOne
+    } else {
+        BrokerType::Unknown
+    }
+}
 
 // ============================================================================
 // 1. ZERODHA (Kite Connect V3 Specs)
