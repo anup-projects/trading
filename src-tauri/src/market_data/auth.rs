@@ -82,25 +82,25 @@ pub struct SharekhanTokenResponse {
 }
 
 #[derive(Debug, Serialize)]
-struct LoginRequest {
-    clientcode: String,
-    mpin: String,
-    totp: String,
+pub struct LoginRequest {
+    pub clientcode: String,
+    pub mpin: String,
+    pub totp: String,
 }
 
 #[derive(Debug, Deserialize)]
-struct LoginResponse {
-    status: bool,
-    message: String,
-    data: Option<LoginData>,
+pub struct LoginResponse {
+    pub status: bool,
+    pub message: String,
+    pub data: Option<LoginData>,
 }
 
 #[derive(Debug, Deserialize)]
-struct LoginData {
+pub struct LoginData {
     #[serde(rename = "jwtToken")]
     pub jwt_token: String,
     #[serde(rename = "refreshToken")]
-    pub _refresh_token: String,
+    pub refresh_token: String,
 }
 
 /// Retrieves the specified broker authorization packet straight from the OS credential manager.
@@ -133,14 +133,10 @@ pub fn get_totp_token(secret: &str) -> Option<String> {
 }
 
 /// Automated login & active JWT generator module.
+/// REMOVED: Mock session bypass. This now returns a strictly validated Result.
 pub async fn generate_active_jwt() -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-    match perform_login_routine().await {
-        Ok(jwt) => Ok(jwt),
-        Err(e) => {
-            eprintln!("Developmental Sandbox Warning - Auth routine error: {:?}. Returning mock session bypass token.", e);
-            Ok("MOCK_SESSION_SUCCESS".to_string())
-        }
-    }
+    let jwt = perform_login_routine().await?;
+    Ok(jwt)
 }
 
 async fn perform_login_routine() -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
@@ -160,11 +156,12 @@ async fn perform_login_routine() -> Result<String, Box<dyn std::error::Error + S
         .map_err(|e| format!("Failed to parse profile JSON: {:?}", e))?;
 
     let totp = get_totp_token(&creds.totp_secret)
-        .ok_or_else(|| Box::<dyn std::error::Error + Send + Sync>::from("Failed to generate TOTP token from secret"))?;
+        .ok_or_else(|| Box::<dyn std::error::Error + Send + Sync>::from("Failed to generate TOTP token"))?;
         
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(5))
         .build()?;
+        
     let login_payload = LoginRequest {
         clientcode: creds.client_id.clone(),
         mpin: creds.mpin.clone(),
@@ -181,18 +178,18 @@ async fn perform_login_routine() -> Result<String, Box<dyn std::error::Error + S
         
     let login_response: LoginResponse = response.json().await?;
     if !login_response.status {
+        // Enforcing strict failure propagation
         return Err(format!("Login failed: {}", login_response.message).into());
     }
     
     let data = login_response.data.ok_or("Login succeeded but returned no data")?;
-    let jwt = data.jwt_token;
     
     // Store or update the cached token dynamically inside RwLock
     if let Ok(mut cache) = ACTIVE_JWT.write() {
-        *cache = Some(jwt.clone());
+        *cache = Some(data.jwt_token.clone());
     }
     
-    Ok(jwt)
+    Ok(data.jwt_token)
 }
 
 /// Retrieve the cached active JWT token.

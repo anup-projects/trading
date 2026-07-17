@@ -19,4 +19,4 @@ totp-lite = "2.0"
 base32 = "0.4"
 futures-util = "0.3"
 sha1 = "0.10"
-keyring = { version = "2.1" }
+keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
