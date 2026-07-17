@@ -1,5 +1,4 @@
 pub mod auth;
-pub mod storage;
 pub mod angel_one;
 pub mod zerodha;
 pub mod sharekhan;

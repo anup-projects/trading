@@ -1,6 +1,7 @@
 use std::sync::RwLock;
 use std::time::SystemTime;
 use serde::{Deserialize, Serialize};
+use keyring::Entry;
 
 static ACTIVE_JWT: RwLock<Option<String>> = RwLock::new(None);
 
@@ -24,6 +25,23 @@ struct LoginData {
     jwt_token: String,
     #[serde(rename = "refreshToken")]
     _refresh_token: String,
+}
+
+/// Retrieves the specified broker authorization packet straight from the OS credential manager.
+fn load_secure_config(client_id: &str) -> Result<String, String> {
+    let vault_service = "com.nexus.trading.core";
+    let profile_key = format!("profile_{}", client_id);
+    
+    // Bind to the authenticated platform key coordinates
+    let entry = Entry::new(vault_service, &profile_key)
+        .map_err(|e| format!("Vault Lookup Failure during broker auth handshake: {:?}", e))?;
+        
+    // Extract the raw secret payload bytes from kernel memory space
+    let secret_bytes = entry.get_secret()
+        .map_err(|e| format!("Access Denied: Broker credentials missing in OS vault matrix. {:?}", e))?;
+        
+    String::from_utf8(secret_bytes)
+        .map_err(|e| format!("Payload Integrity Corruption Detected: {:?}", e))
 }
 
 /// Compute the active 6-digit TOTP token using the secret.
@@ -50,20 +68,20 @@ pub async fn generate_active_jwt() -> Result<String, Box<dyn std::error::Error +
 }
 
 async fn perform_login_routine() -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-    // Load credentials dynamically from the secure storage engine
-    let config = super::storage::load_secure_config()
+    // 1. Retrieve the active profile identifier from the vault
+    let active_entry = Entry::new("com.nexus.trading.core", "active_client_id")
+        .map_err(|e| format!("Failed to access active profile key in keyring: {:?}", e))?;
+    let active_bytes = active_entry.get_secret()
+        .map_err(|e| format!("No active profile selected in keyring: {:?}", e))?;
+    let client_id = String::from_utf8(active_bytes)
+        .map_err(|e| format!("Active client ID string corruption: {:?}", e))?;
+
+    // 2. Load the corresponding credentials from the secure platform vault
+    let secret_json = load_secure_config(&client_id)
         .map_err(|e| Box::<dyn std::error::Error + Send + Sync>::from(e))?;
     
-    // Find the active profile matching config.active_profile_id
-    let active_profile = config.profiles.iter()
-        .find(|p| p.id == config.active_profile_id)
-        .ok_or_else(|| Box::<dyn std::error::Error + Send + Sync>::from("Active profile not found in configuration"))?;
-
-    // Safely extract credentials depending on BrokerProfile enum layout (AngelOne variant match)
-    let creds = match &active_profile.credentials {
-        super::BrokerProfile::AngelOne(ref c) => c,
-        _ => return Err(Box::<dyn std::error::Error + Send + Sync>::from("Active profile is not an Angel One broker profile")),
-    };
+    let creds: crate::TradingProfile = serde_json::from_str(&secret_json)
+        .map_err(|e| format!("Failed to parse profile JSON: {:?}", e))?;
 
     let totp = get_totp_token(&creds.totp_secret)
         .ok_or_else(|| Box::<dyn std::error::Error + Send + Sync>::from("Failed to generate TOTP token from secret"))?;
