@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Trading Core</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Universal Broker Login Modal Overlay -->
+    <div id="login-wizard-overlay">
+        <div id="login-wizard-card">
+            <div class="modal-header">
+                <h2 class="modal-title">Broker Login Wizard</h2>
+                <p class="modal-subtitle">Connect your broker account to begin real-time data streaming</p>
+            </div>
+            <form id="login-wizard-form" onsubmit="event.preventDefault();">
+                <div class="form-group">
+                    <label class="form-label" for="broker-select">Select Broker</label>
+                    <select id="broker-select" class="form-select" required>
+                        <option value="AngelOne">Angel One</option>
+                        <option value="Zerodha">Zerodha (Kite)</option>
+                        <option value="Sharekhan">Sharekhan</option>
+                    </select>
+                </div>
+                <div class="form-group" id="row-client-id">
+                    <label class="form-label" for="profile-client-input">Broker Client ID</label>
+                    <div style="position: relative; width: 100%; display: flex; align-items: center;">
+                        <input type="text" id="profile-client-input" class="form-input input-control" placeholder="Enter Client ID or select saved..." autocomplete="off" style="width: 100%; padding-right: 35px;">
+                        <!-- Explicit Direct-ID Chevron List Action Button Selector Component -->
+                        <span id="trigger-profile-list" style="position: absolute; right: 10px; cursor: pointer; color: #004d4d; font-size: 0.8rem; user-select: none;">▼</span>
+                        <div id="custom-profile-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background-color: #1c1c1c; border: 1px solid #004d4d; max-height: 150px; overflow-y: auto; z-index: 100000; border-radius: 0 0 4px 4px;"></div>
+                    </div>
+                </div>
+                <div class="form-group" id="row-api-key">
+                    <label class="form-label" for="api-key">API Key</label>
+                    <div style="position: relative; width: 100%; box-sizing: border-box;">
+                        <input type="password" id="api-key" class="form-input" placeholder="Enter API Key" required autocomplete="current-password" style="width: 100%; padding-right: 40px; box-sizing: border-box;">
+                        <button type="button" id="toggle-api-key" class="password-toggle" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; display: flex; align-items: center; justify-content: center; padding: 0; box-sizing: border-box;" aria-label="Toggle Password Visibility">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon">
+                                <path id="path-api-key" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group" id="row-secret-key" style="display: none;">
+                    <label class="form-label" for="secret-key">Secret Key / API Secret</label>
+                    <div style="position: relative; width: 100%; box-sizing: border-box;">
+                        <input type="password" id="secret-key" class="form-input" placeholder="Enter Secret Key" style="width: 100%; padding-right: 40px; box-sizing: border-box;">
+                        <button type="button" id="toggle-secret-key" class="password-toggle" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; display: flex; align-items: center; justify-content: center; padding: 0; box-sizing: border-box;" aria-label="Toggle Password Visibility">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon">
+                                <path id="path-secret-key" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group" id="row-password" style="display: none;">
+                    <label class="form-label" for="acc-password">Account Password</label>
+                    <div style="position: relative; width: 100%; box-sizing: border-box;">
+                        <input type="password" id="acc-password" class="form-input" placeholder="Enter Account Password" style="width: 100%; padding-right: 40px; box-sizing: border-box;">
+                        <button type="button" id="toggle-password" class="password-toggle" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; display: flex; align-items: center; justify-content: center; padding: 0; box-sizing: border-box;" aria-label="Toggle Password Visibility">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon">
+                                <path id="path-password" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group" id="row-mpin">
+                    <label class="form-label" for="mpin">MPIN / Password</label>
+                    <div style="position: relative; width: 100%; box-sizing: border-box;">
+                        <input type="password" id="mpin" class="form-input" placeholder="Enter MPIN or password" required autocomplete="current-password" style="width: 100%; padding-right: 40px; box-sizing: border-box;">
+                        <button type="button" id="toggle-mpin" class="password-toggle" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; display: flex; align-items: center; justify-content: center; padding: 0; box-sizing: border-box;" aria-label="Toggle Password Visibility">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon">
+                                <path id="path-mpin" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group" id="row-totp-secret">
+                    <label class="form-label" for="totp-secret">TOTP Secret Key</label>
+                    <div style="position: relative; width: 100%; box-sizing: border-box;">
+                        <input type="password" id="totp-secret" class="form-input" placeholder="Enter TOTP Secret" required autocomplete="current-password" style="width: 100%; padding-right: 40px; box-sizing: border-box;">
+                        <button type="button" id="toggle-totp" class="password-toggle" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; display: flex; align-items: center; justify-content: center; padding: 0; box-sizing: border-box;" aria-label="Toggle Password Visibility">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon">
+                                <path id="path-totp" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- AI Analytics Configurations Section -->
+                <div class="ai-config-section" style="margin-top: 20px; border-top: 1px solid #1e293b; padding-top: 15px; box-sizing: border-box;">
+                    <h3 style="font-size: 0.9rem; color: #f8fafc; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; box-sizing: border-box;">AI Analytics Configurations</h3>
+                    <div class="form-group" style="flex-direction: row; align-items: center; gap: 10px; margin-bottom: 15px; box-sizing: border-box;">
+                        <input type="checkbox" id="ai-toggle" style="width: 18px; height: 18px; accent-color: #00875a; cursor: pointer; box-sizing: border-box;">
+                        <label for="ai-toggle" class="form-label" style="margin-bottom: 0; cursor: pointer; font-size: 0.85rem; text-transform: none; font-weight: 500; box-sizing: border-box;">Enable Premium Gemini AI Analytics</label>
+                    </div>
+                    <div id="gemini-ai-config-panel" class="form-group" style="display: none; margin-top: 12px; box-sizing: border-box;">
+                        <label class="form-label" for="gemini-api-key">Gemini API Key</label>
+                        <div style="position: relative; width: 100%; box-sizing: border-box; margin-bottom: 15px;">
+                            <input type="password" id="gemini-api-key" class="form-input" placeholder="Enter Gemini API Key" autocomplete="current-password" style="width: 100%; padding-right: 40px; box-sizing: border-box; margin-bottom: 0;">
+                            <button type="button" id="toggle-gemini" class="password-toggle" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #94a3b8; display: flex; align-items: center; justify-content: center; padding: 0; box-sizing: border-box;" aria-label="Toggle Password Visibility">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon">
+                                    <path id="path-gemini" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <label class="form-label" for="ai-analysis-mode" style="box-sizing: border-box;">AI Analysis Mode</label>
+                        <select id="ai-analysis-mode" class="form-select" style="box-sizing: border-box;">
+                            <option value="Gemini Standard Core Analyst">Gemini Standard Core Analyst</option>
+                            <option value="Fundamental Summary Engine (Screener.in Methodology)">Fundamental Summary Engine (Screener.in Methodology)</option>
+                            <option value="Institutional Sentiment Scanner (AlphaSense Methodology)">Institutional Sentiment Scanner (AlphaSense Methodology)</option>
+                            <option value="Retail Momentum & Option Signal Tracker (Prospero.ai Methodology)">Retail Momentum & Option Signal Tracker (Prospero.ai Methodology)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button type="submit" id="save-auth-btn" class="btn-submit">Save & Authenticate Session</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="app">
+        <!-- Top Layout Bar / Account Profile Selector -->
+        <div class="top-layout-bar" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #1e293b; box-sizing: border-box;">
+            <div style="display: flex; align-items: center; gap: 8px; box-sizing: border-box;">
+                <span id="active-profile-dot" style="width: 8px; height: 8px; background-color: #00875a; border-radius: 50%; display: inline-block; box-sizing: border-box;"></span>
+                <label for="active-profile-dropdown" style="font-size: 0.85rem; font-weight: 600; color: #94a3b8; box-sizing: border-box;">Account Profile Selector</label>
+                <select id="active-profile-dropdown" style="background-color: #1e1e1e; border: 1px solid #334155; border-radius: 4px; color: #f1f5f9; padding: 4px 8px; font-size: 0.85rem; outline: none; box-sizing: border-box;">
+                    <option value="default">Default Trading Profile</option>
+                    <option value="angel_one">Angel One (AACI806359)</option>
+                    <option value="zerodha">Zerodha (Kite - Demo)</option>
+                </select>
+            </div>
+        </div>
+
+        <h1>Zero-Lag Tick Monitor</h1>
+        <div id="status-badge" class="badge">API Status: Authenticating...</div>
+        
+        <!-- Add to dark-mode panel layout workspace grid wrapper -->
+        <div id="workspace-grid" style="display: none; padding: 15px; background-color: #121212; margin-bottom: 20px; border-radius: 6px; box-sizing: border-box;">
+            <div class="panel chart-panel" style="background-color: #1c1c1c; border-radius: 6px; padding: 10px; box-sizing: border-box;">
+                <div class="panel-header" style="margin-bottom: 10px; color: #ffffff; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between;">
+                    <h3 style="margin: 0; font-size: 1.1rem; box-sizing: border-box;">📊 Nexus Trading Core — Real-Time Ticker Engine</h3>
+                    <div style="display: flex; align-items: center; gap: 8px; box-sizing: border-box;">
+                        <label for="stock-select" style="font-size: 0.85rem; font-weight: 600; color: #94a3b8; box-sizing: border-box;">Active Asset:</label>
+                        <select id="stock-select" style="background-color: #1e1e1e; border: 1px solid #004d4d; border-radius: 4px; color: #f1f5f9; padding: 4px 8px; font-size: 0.85rem; outline: none; box-sizing: border-box;">
+                            <option value="TCS">TCS</option>
+                            <option value="RELIANCE">RELIANCE</option>
+                            <option value="INFOSYS">INFOSYS</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="tv-chart-container" style="width: 100%; height: 450px; box-sizing: border-box;"></div>
+            </div>
+        </div>
+
+        <div id="tick-container">
+            <pre id="tick-log">Waiting for real-time market ticks...</pre>
+        </div>
+    </div>
+    <script src="lightweight-charts.js"></script>
+    <script src="main.js" type="module"></script>
+</body>
+</html>

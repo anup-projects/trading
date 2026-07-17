@@ -1,0 +1,286 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #0c0f12;
+    color: #e2e8f0;
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+*, *:before, *:after {
+    box-sizing: inherit;
+}
+
+#app {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #141a21;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    border: 1px solid #004d4d;
+}
+
+h1 {
+    font-size: 1.8rem;
+    margin-top: 0;
+    border-bottom: 2px solid #004d4d;
+    padding-bottom: 10px;
+    color: #38bdf8;
+}
+
+.badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    background-color: #334155;
+    color: #f8fafc;
+}
+
+.badge-connected {
+    background-color: #005a36;
+    color: #f0fdf4;
+}
+
+.badge-offline {
+    background-color: #dc2626;
+    color: #fef2f2;
+}
+
+#tick-container {
+    background-color: #020617;
+    border: 1px solid #004d4d;
+    border-radius: 6px;
+    padding: 15px;
+}
+
+#tick-log {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9rem;
+    color: #00cc99;
+    margin: 0;
+    height: 350px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+}
+
+/* --- STEP 2: UNIVERSAL BROKER LOGIN MODAL LAYOUT --- */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(10, 10, 10, 0.85);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 1;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.modal-container {
+    background-color: #121212;
+    border: 2px solid #004d4d;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 450px;
+    padding: 25px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+    animation: modalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-header {
+    margin-bottom: 20px;
+}
+
+.modal-title {
+    font-size: 1.4rem;
+    color: #f8fafc;
+    margin: 0;
+    font-weight: 700;
+}
+
+.modal-subtitle {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    margin: 6px 0 0 0;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+}
+
+.form-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #94a3b8;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.form-input, .form-select {
+    width: 100%;
+    padding: 10px 12px;
+    background-color: #1e1e1e;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    color: #f1f5f9;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input:focus, .form-select:focus {
+    border-color: #00cc99;
+    box-shadow: 0 0 0 3px rgba(0, 204, 153, 0.15);
+}
+
+.form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 10px center;
+    background-repeat: no-repeat;
+    background-size: 1.2rem;
+}
+
+.btn-submit {
+    width: 100%;
+    padding: 12px;
+    background-color: #005a36;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    margin-top: 15px;
+}
+
+.btn-submit:hover {
+    background-color: #004026;
+}
+
+.btn-submit:active {
+    transform: scale(0.98);
+}
+
+/* Disable native Windows Webview2 / Edge password reveal eye icon */
+input::-ms-reveal,
+input::-ms-clear {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+/* Clear native WebKit/Blink auxiliary element footprints if any */
+input::-webkit-contacts-auto-fill-button,
+input::-webkit-credentials-auto-fill-button {
+    visibility: hidden !important;
+    display: none !important;
+    pointer-events: none !important;
+}
+
+/* Update your primary login onboarding modal panel wrapper styles */
+#login-wizard-modal .modal-container, .login-wizard-container {
+    max-height: 95vh !important; /* Cap container size to fit safely inside desktop screen frames */
+    overflow-y: auto !important;  /* Force the application window frame to handle content spillover cleanly */
+    padding-bottom: 40px !important; /* Inject an structural vertical cushion layout padding boundary */
+    box-sizing: border-box !important;
+}
+
+/* --- Safe Direct-ID Structural Overrides For Onboarding Core --- */
+
+/* 1. Freeze global HTML application frame canvas to eliminate outer scroll track entirely */
+html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    overflow: hidden !important; 
+    box-sizing: border-box !important;
+}
+
+/* 2. Institutional Fullscreen Masking Shield to block out background chart leakage */
+#login-wizard-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background-color: #0d0d0d !important; /* Total flat opaque black layer to eliminate alpha leakage channels */
+    z-index: 999999 !important; /* Ultimate stack height layer priority override allocation */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* 3. Pure Content-Isolated Onboarding Card Container with Fixed Boundary Limits */
+#login-wizard-card {
+    width: 100% !important;
+    max-width: 500px !important; /* Pristine corporate form footprint dimensions */
+    max-height: 85vh !important;  /* Constrain the card body within clear viewport margins */
+    background-color: #1c1c1c !important; /* Elevated flat dark palette base color */
+    border: 1px solid #004d4d !important;  /* Thin Mercurial metallic teal outline border hook */
+    border-radius: 8px !important;
+    padding: 30px !important; /* Enforce symmetric breathing spacing around internal form boxes */
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important; /* Pin the single, clean scroll track strictly INSIDE the card profile boundary */
+}
+
+/* 4. Scrollbar track aesthetic customization to suppress structural breakout lines */
+#login-wizard-card::-webkit-scrollbar {
+    width: 6px !important;
+}
+#login-wizard-card::-webkit-scrollbar-track {
+    background: #121212 !important;
+    border-radius: 0 8px 8px 0 !important;
+}
+#login-wizard-card::-webkit-scrollbar-thumb {
+    background: #004d4d !important; /* Metallic Teal track thumb locator */
+    border-radius: 3px !important;
+}
+
+/* 5. Force standard form layouts to expand with liquid height geometry */
+#login-wizard-card form {
+    height: auto !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 15px !important; /* Explicit vertical field padding isolation gap */
+}
+
+
+
