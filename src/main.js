@@ -1,6 +1,12 @@
 // Complete File Override: d:/Projects/Trading/src/main.js
 document.addEventListener('DOMContentLoaded', () => {
     // --- 1. Defensive Direct-ID Eye Reveal Functionality Matrix ---
+    /**
+     * Binds click events to password toggle buttons to switch visibility and SVG icons.
+     * @param {string} btnId - The ID of the button element.
+     * @param {string} inputId - The ID of the password input element.
+     * @param {string} pathId - The ID of the SVG path element inside the button.
+     */
     const bindVectorEyeToggle = (btnId, inputId, pathId) => {
         const btn = document.getElementById(btnId);
         const input = document.getElementById(inputId);
@@ -29,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     bindVectorEyeToggle('toggle-gemini', 'gemini-api-key', 'path-gemini');
 
     // --- 2. Deterministic Broker Parameter Visibility Routing Engine ---
-    const brokerSelect = document.getElementById('broker-select');
+    const brokerSelect = document.getElementById('brokerSelect');
     const rowApiKey = document.getElementById('row-api-key');
     const rowSecretKey = document.getElementById('row-secret-key');
     const rowPassword = document.getElementById('row-password');
@@ -122,14 +128,80 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 5. Strict Session Authentication Gatekeeper ---
     const authBtn = document.getElementById('save-auth-btn');
     const rootOverlay = document.getElementById('login-wizard-overlay');
     const workspaceGrid = document.getElementById('workspace-grid');
 
+    let isSessionActive = false;
+
+    /**
+     * Renders the dashboard workspace view, hiding the login overlay and loading charts.
+     */
+    function renderDashboardView() {
+        console.log("Trace: Session active. Bypassing gatekeeper. Rendering dashboard.");
+        const statusBox = document.getElementById("statusBox");
+        if (statusBox) statusBox.innerText = "Login Successful!";
+        if (rootOverlay) rootOverlay.style.setProperty('display', 'none', 'important');
+        if (workspaceGrid) workspaceGrid.style.setProperty('display', 'grid', 'important');
+        initializeChartEngine();
+    }
+
+    /**
+     * Triggers the automated system boot and logs into the selected broker via Tauri command.
+     * @returns {Promise<void>}
+     */
+    async function triggerAutomatedSystemBoot() {
+        if (isSessionActive) {
+            return renderDashboardView();
+        }
+
+        console.log("Trace: Starting automated system boot pre-flight check...");
+        const loader = document.getElementById("loader");
+        const statusBox = document.getElementById("statusBox");
+
+        try {
+            if (typeof window.__TAURI__ !== 'undefined' && window.__TAURI__.core) {
+                // Stage 1: Pre-flight Check (Check Secure Store)
+                const storedProfile = await window.__TAURI__.core.invoke('check_secure_store_for_creds');
+                
+                if (storedProfile) {
+                    console.log("Trace: Credentials found in keychain. Initiating auto-handshake...");
+                    if (loader) loader.style.display = "block";
+                    if (statusBox) statusBox.innerText = "Initiating secure auto-handshake...";
+
+                    const result = await window.__TAURI__.core.invoke('initialize_system_login', { creds: storedProfile });
+                    console.log("Trace: Auto-handshake response:", result);
+                    
+                    if (loader) loader.style.display = "none";
+
+                    if (result.status === "SESSION_SUCCESS") {
+                        isSessionActive = true;
+                        renderDashboardView();
+                        return;
+                    } else {
+                        if (statusBox) statusBox.innerText = `Auto-login failed: ${result.error_message}`;
+                    }
+                } else {
+                    console.log("Trace: No credentials found. Triggering UI prompt for user input.");
+                }
+            }
+        } catch (err) {
+            console.error("Trace: Pre-flight check error:", err);
+            if (loader) loader.style.display = "none";
+        }
+    }
+
     if (authBtn) {
         authBtn.addEventListener('click', async (e) => {
             e.preventDefault();
+            console.log("Trace: Save & Authenticate clicked. Starting save sequence...");
+
+            // Diagnostic: Verify Bridge Availability
+            if (typeof window.__TAURI__ === 'undefined' || !window.__TAURI__.core) {
+                console.error("CRITICAL ERROR: Tauri IPC bridge is unavailable. Ensure you are running via 'npm run tauri dev'.");
+                return;
+            }
+
             const payload = {
                 broker_type: brokerSelect ? brokerSelect.value : 'AngelOne',
                 client_id: clientInput ? clientInput.value.trim() : '',
@@ -137,7 +209,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 mpin: document.getElementById('mpin').value.trim(),
                 totp_secret: document.getElementById('totp-secret').value.trim(),
                 secret_key: document.getElementById('secret-key').value.trim(),
-                acc_password: document.getElementById('acc-password').value.trim()
+                acc_password: document.getElementById('acc-password').value.trim(),
+                gemini_api_key: document.getElementById('gemini-api-key') ? document.getElementById('gemini-api-key').value.trim() : null,
+                ai_enabled: document.getElementById('ai-toggle') ? document.getElementById('ai-toggle').checked : false
             };
 
             if (!payload.client_id || payload.client_id === "garbage") {
@@ -145,40 +219,43 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            if (window.__TAURI__) {
-                const statusLabel = document.getElementById('api-status-text');
-                if (statusLabel) statusLabel.innerText = "API Status: Authenticating...";
-                try {
-                    // 1. Commit profile parameters to hard disk config file first
-                    await window.__TAURI__.core.invoke('save_trading_profile', payload);
-                    
-                    // 2. Commit profile secret to secure vault
-                    await window.__TAURI__.core.invoke('save_secure_token', { clientId: payload.client_id, secret: JSON.stringify(payload) });
+            try {
+                const invoke = window.__TAURI__.core.invoke;
 
-                    // 3. Set active profile
-                    await window.__TAURI__.core.invoke('save_secure_token', { clientId: "active_client_id", secret: payload.client_id });
-                    
-                    // 4. Run verbose initialization handshake over the network bridge
-                    const result = await window.__TAURI__.core.invoke('initialize_system_login', { brokerType: payload.broker_type });
-                    
-                    if (result.status === "SESSION_SUCCESS") {
-                        if (statusLabel) statusLabel.innerText = "API Status: Live Token Connected";
-                        if (rootOverlay) rootOverlay.style.setProperty('display', 'none', 'important');
-                        if (workspaceGrid) workspaceGrid.style.setProperty('display', 'grid', 'important');
-                        initializeChartEngine();
-                    } else {
-                        if (statusLabel) statusLabel.innerText = `API Status: Auth Failed (${result.error_message})`;
-                        alert(`Access Denied:\n${result.error_message}`);
+                console.log("Trace: Attempting direct broker API verification...");
+                // Direct login verification with Broker API before persistence
+                const authResult = await invoke('login_to_broker', { 
+                    clientId: payload.client_id, 
+                    mpin: payload.mpin 
+                });
+
+                console.log("Trace: Broker verified successfully:", authResult);
+
+                console.log("Trace: Starting blocking save sequence...");
+                const writeResult = await invoke('save_credentials_securely', { payload });
+
+                if (writeResult === "VERIFIED_SUCCESS") {
+                    console.log("Trace: Persistence confirmed. Transitioning view...");
+                    isSessionActive = true;
+                    if (customDropdown) {
+                        customDropdown.innerHTML = ""; // Clear placeholder
                     }
-                } catch (err) {
-                    console.error("Authentication Gate Rejection:", err);
-                    if (statusLabel) statusLabel.innerText = `API Status: Auth Failed (${err})`;
-                    alert(`Access Denied:\n${err}`);
+                    await triggerAutomatedSystemBoot();
+                } else {
+                    console.error("Trace: Persistence failed.");
+                    alert("Save Failed:\nKeyring or database write rejected.");
                 }
+            } catch (err) {
+                console.error("Trace: CRITICAL FAILURE. Authentication failed:", err);
+                alert(`Login Failed:\n${err}`);
             }
         });
     }
 
+    /**
+     * Initializes the lightweight charts container and listens to mock tick events.
+     * @returns {void}
+     */
     function initializeChartEngine() {
         const chartContainer = document.getElementById('tv-chart-container');
         if (!chartContainer || chartContainer.children.length > 0 || typeof LightweightCharts === 'undefined') return;
@@ -203,4 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Chart build exception caught:", e);
         }
     }
+
+    // Trigger pre-flight check automatically on window load
+    triggerAutomatedSystemBoot();
 });

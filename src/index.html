@@ -16,13 +16,15 @@
             </div>
             <form id="login-wizard-form" onsubmit="event.preventDefault();">
                 <div class="form-group">
-                    <label class="form-label" for="broker-select">Select Broker</label>
-                    <select id="broker-select" class="form-select" required>
+                    <label class="form-label" for="brokerSelect">Select Broker</label>
+                    <select id="brokerSelect" class="form-select" required>
                         <option value="AngelOne">Angel One</option>
                         <option value="Zerodha">Zerodha (Kite)</option>
                         <option value="Sharekhan">Sharekhan</option>
                     </select>
                 </div>
+                <div id="loader" style="display: none; color: #00875a; font-size: 0.85rem; margin-bottom: 10px;"></div>
+                <div id="statusBox" style="display: none; color: #f8fafc; font-size: 0.85rem; margin-bottom: 10px;"></div>
                 <div class="form-group" id="row-client-id">
                     <label class="form-label" for="profile-client-input">Broker Client ID</label>
                     <div style="position: relative; width: 100%; display: flex; align-items: center;">
